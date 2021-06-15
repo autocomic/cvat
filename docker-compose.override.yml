@@ -1,0 +1,42 @@
+version: '3.3'
+
+services:
+  cvat_proxy:
+    environment:
+      CVAT_HOST: 34.152.23.1
+
+  cvat_db:
+    volumes:
+      - cvat_db:/var/lib/postgresql/data
+
+  cvat:
+    environment:
+      ALLOWED_HOSTS: '*'
+      CVAT_SHARE_URL: 'Mounted from /mnt/share host directory'
+    volumes:
+      - cvat_share:/home/django/share:ro
+      - cvat_data:/home/django/data
+      - cvat_keys:/home/django/keys
+
+volumes:
+  cvat_share:
+    driver_opts:
+      type: none
+      device: /mnt/disks/data/datasets
+      o: bind
+  cvat_data:
+    driver_opts:
+      type: none
+      device: /mnt/disks/data/cvat/data
+      o: bind
+  cvat_db:
+    driver_opts:
+      type: none
+      device: /mnt/disks/data/cvat/db
+      o: bind
+  cvat_keys:
+    driver_opts:
+      type: none
+      device: /mnt/disks/data/cvat/keys
+      o: bind
+

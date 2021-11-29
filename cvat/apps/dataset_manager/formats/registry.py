@@ -51,7 +51,19 @@ def _wrap_format(f_or_cls, klass, name, version, ext, display_name, enabled, dim
 
     return target
 
+
 EXPORT_FORMATS = {}
+
+
+def format_for(export_format, mode):
+    format_name = export_format
+    if mode == "annotation":
+        format_name = "CVAT for images 1.1"
+    elif export_format not in EXPORT_FORMATS:
+        format_name = "CVAT for video 1.1"
+    return format_name
+
+
 def exporter(name, version, ext, display_name=None, enabled=True, dimension=DimensionType.DIM_2D):
     assert name not in EXPORT_FORMATS, "Export format '%s' already registered" % name
     def wrap_with_params(f_or_cls):
@@ -82,6 +94,14 @@ def make_importer(name):
 def make_exporter(name):
     return EXPORT_FORMATS[name]()
 
+
+# Add checking for TF availability to avoid CVAT sever instance / interpreter
+# crash and provide a meaningful diagnistic message in the case of AVX
+# instructions unavailability:
+# https://github.com/openvinotoolkit/cvat/pull/1567
+import datumaro.util.tf_util as TF
+TF.enable_tf_check = True
+
 # pylint: disable=unused-import
 import cvat.apps.dataset_manager.formats.coco
 import cvat.apps.dataset_manager.formats.cvat
@@ -99,3 +119,9 @@ import cvat.apps.dataset_manager.formats.widerface
 import cvat.apps.dataset_manager.formats.vggface2
 import cvat.apps.dataset_manager.formats.market1501
 import cvat.apps.dataset_manager.formats.icdar
+import cvat.apps.dataset_manager.formats.velodynepoint
+import cvat.apps.dataset_manager.formats.pointcloud
+import cvat.apps.dataset_manager.formats.kitti
+import cvat.apps.dataset_manager.formats.lfw
+import cvat.apps.dataset_manager.formats.cityscapes
+import cvat.apps.dataset_manager.formats.openimages

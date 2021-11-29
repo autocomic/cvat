@@ -3,7 +3,10 @@ version: '3.3'
 services:
   cvat_proxy:
     environment:
-      CVAT_HOST: 34.152.23.1
+      CVAT_HOST: label.autocomic.io
+      cvat_proxy:
+    ports:
+      - '80:80'
 
   cvat_db:
     volumes:

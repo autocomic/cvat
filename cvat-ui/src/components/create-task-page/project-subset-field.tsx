@@ -32,7 +32,7 @@ export default function ProjectSubsetField(props: Props): JSX.Element {
 
     useEffect(() => {
         if (!projectSubsets?.length && projectId) {
-            core.projects.get({ id: projectId, withoutTasks: true }).then((response: ProjectPartialWithSubsets[]) => {
+            core.projects.get({ id: projectId }).then((response: ProjectPartialWithSubsets[]) => {
                 if (response.length) {
                     const [project] = response;
                     setInternalSubsets(
@@ -63,7 +63,7 @@ export default function ProjectSubsetField(props: Props): JSX.Element {
         <Autocomplete
             value={internalValue}
             placeholder='Input subset'
-            className='cvat-project-search-field'
+            className='cvat-project-search-field cvat-project-subset-field'
             onSearch={(_value) => setInternalValue(_value)}
             onSelect={(_value) => {
                 if (_value !== internalValue) {

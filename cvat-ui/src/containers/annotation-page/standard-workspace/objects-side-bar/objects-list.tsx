@@ -16,8 +16,7 @@ import {
     copyShape as copyShapeAction,
     propagateObject as propagateObjectAction,
 } from 'actions/annotation-actions';
-import { Canvas } from 'cvat-canvas-wrapper';
-import { Canvas3d } from 'cvat-canvas3d-wrapper';
+import isAbleToChangeFrame from 'utils/is-able-to-change-frame';
 import {
     CombinedState, StatesOrdering, ObjectType, ColorBy,
 } from 'reducers/interfaces';
@@ -42,7 +41,6 @@ interface StateToProps {
     maxZLayer: number;
     keyMap: KeyMap;
     normalizedKeyMap: Record<string, string>;
-    canvasInstance: Canvas | Canvas3d;
 }
 
 interface DispatchToProps {
@@ -70,7 +68,6 @@ function mapStateToProps(state: CombinedState): StateToProps {
             player: {
                 frame: { number: frameNumber },
             },
-            canvas: { instance: canvasInstance },
             colors,
         },
         settings: {
@@ -108,7 +105,6 @@ function mapStateToProps(state: CombinedState): StateToProps {
         maxZLayer,
         keyMap,
         normalizedKeyMap,
-        canvasInstance,
     };
 }
 
@@ -257,7 +253,6 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
             minZLayer,
             keyMap,
             normalizedKeyMap,
-            canvasInstance,
             colors,
             colorBy,
             readonly,
@@ -287,6 +282,16 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
             NEXT_KEY_FRAME: keyMap.NEXT_KEY_FRAME,
             PREV_KEY_FRAME: keyMap.PREV_KEY_FRAME,
             CHANGE_OBJECT_COLOR: keyMap.CHANGE_OBJECT_COLOR,
+            TILT_UP: keyMap.TILT_UP,
+            TILT_DOWN: keyMap.TILT_DOWN,
+            ROTATE_LEFT: keyMap.ROTATE_LEFT,
+            ROTATE_RIGHT: keyMap.ROTATE_RIGHT,
+            MOVE_UP: keyMap.MOVE_UP,
+            MOVE_DOWN: keyMap.MOVE_DOWN,
+            MOVE_LEFT: keyMap.MOVE_LEFT,
+            MOVE_RIGHT: keyMap.MOVE_RIGHT,
+            ZOOM_IN: keyMap.ZOOM_IN,
+            ZOOM_OUT: keyMap.ZOOM_OUT,
         };
 
         const preventDefault = (event: KeyboardEvent | undefined): void => {
@@ -308,6 +313,16 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
         };
 
         const handlers = {
+            TILT_UP: () => {}, // Handled by CVAT 3D Independently
+            TILT_DOWN: () => {},
+            ROTATE_LEFT: () => {},
+            ROTATE_RIGHT: () => {},
+            MOVE_UP: () => {},
+            MOVE_DOWN: () => {},
+            MOVE_LEFT: () => {},
+            MOVE_RIGHT: () => {},
+            ZOOM_IN: () => {},
+            ZOOM_OUT: () => {},
             SWITCH_ALL_LOCK: (event: KeyboardEvent | undefined) => {
                 preventDefault(event);
                 this.lockAllStates(!statesLocked);
@@ -417,7 +432,7 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
                 const state = activatedStated();
                 if (state && state.objectType === ObjectType.TRACK) {
                     const frame = typeof state.keyframes.next === 'number' ? state.keyframes.next : null;
-                    if (frame !== null && canvasInstance.isAbleToChangeFrame()) {
+                    if (frame !== null && isAbleToChangeFrame()) {
                         changeFrame(frame);
                     }
                 }
@@ -427,7 +442,7 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
                 const state = activatedStated();
                 if (state && state.objectType === ObjectType.TRACK) {
                     const frame = typeof state.keyframes.prev === 'number' ? state.keyframes.prev : null;
-                    if (frame !== null && canvasInstance.isAbleToChangeFrame()) {
+                    if (frame !== null && isAbleToChangeFrame()) {
                         changeFrame(frame);
                     }
                 }

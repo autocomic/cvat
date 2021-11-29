@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { MutableRefObject } from 'react';
 import {
     ActionCreator, AnyAction, Dispatch, Store,
 } from 'redux';
@@ -150,7 +149,6 @@ export enum AnnotationActionTypes {
     COLLAPSE_APPEARANCE = 'COLLAPSE_APPEARANCE',
     COLLAPSE_OBJECT_ITEMS = 'COLLAPSE_OBJECT_ITEMS',
     ACTIVATE_OBJECT = 'ACTIVATE_OBJECT',
-    SELECT_OBJECTS = 'SELECT_OBJECTS',
     REMOVE_OBJECT_SUCCESS = 'REMOVE_OBJECT_SUCCESS',
     REMOVE_OBJECT_FAILED = 'REMOVE_OBJECT_FAILED',
     PROPAGATE_OBJECT = 'PROPAGATE_OBJECT',
@@ -184,7 +182,6 @@ export enum AnnotationActionTypes {
     SAVE_LOGS_SUCCESS = 'SAVE_LOGS_SUCCESS',
     SAVE_LOGS_FAILED = 'SAVE_LOGS_FAILED',
     INTERACT_WITH_CANVAS = 'INTERACT_WITH_CANVAS',
-    SET_AI_TOOLS_REF = 'SET_AI_TOOLS_REF',
     GET_DATA_FAILED = 'GET_DATA_FAILED',
     SWITCH_REQUEST_REVIEW_DIALOG = 'SWITCH_REQUEST_REVIEW_DIALOG',
     SWITCH_SUBMIT_REVIEW_DIALOG = 'SWITCH_SUBMIT_REVIEW_DIALOG',
@@ -197,6 +194,7 @@ export enum AnnotationActionTypes {
     GET_CONTEXT_IMAGE = 'GET_CONTEXT_IMAGE',
     GET_CONTEXT_IMAGE_SUCCESS = 'GET_CONTEXT_IMAGE_SUCCESS',
     GET_CONTEXT_IMAGE_FAILED = 'GET_CONTEXT_IMAGE_FAILED',
+    SWITCH_NAVIGATION_BLOCKED = 'SWITCH_NAVIGATION_BLOCKED',
 }
 
 export function saveLogsAsync(): ThunkAction {
@@ -259,12 +257,14 @@ export function fetchAnnotationsAsync(): ThunkAction {
                 filters, frame, showAllInterpolationTracks, jobInstance,
             } = receiveAnnotationsParameters();
             const states = await jobInstance.annotations.get(frame, showAllInterpolationTracks, filters);
+            const history = await jobInstance.actions.get();
             const [minZ, maxZ] = computeZRange(states);
 
             dispatch({
                 type: AnnotationActionTypes.FETCH_ANNOTATIONS_SUCCESS,
                 payload: {
                     states,
+                    history,
                     minZ,
                     maxZ,
                 },
@@ -306,17 +306,24 @@ export function updateCanvasContextMenu(
     };
 }
 
-export function removeAnnotationsAsync(sessionInstance: any): ThunkAction {
+export function removeAnnotationsAsync(
+    startFrame: number, endFrame: number, delTrackKeyframesOnly: boolean,
+): ThunkAction {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
         try {
-            await sessionInstance.annotations.clear();
-            await sessionInstance.actions.clear();
-            const history = await sessionInstance.actions.get();
+            const {
+                filters, frame, showAllInterpolationTracks, jobInstance,
+            } = receiveAnnotationsParameters();
+            await jobInstance.annotations.clear(false, startFrame, endFrame, delTrackKeyframesOnly);
+            await jobInstance.actions.clear();
+            const history = await jobInstance.actions.get();
+            const states = await jobInstance.annotations.get(frame, showAllInterpolationTracks, filters);
 
             dispatch({
                 type: AnnotationActionTypes.REMOVE_JOB_ANNOTATIONS_SUCCESS,
                 payload: {
                     history,
+                    states,
                 },
             });
         } catch (error) {
@@ -556,15 +563,6 @@ export function copyShape(objectState: any): AnyAction {
     };
 }
 
-export function selectObjects(selectedStatesID: number[]): AnyAction {
-    return {
-        type: AnnotationActionTypes.SELECT_OBJECTS,
-        payload: {
-            selectedStatesID,
-        },
-    };
-}
-
 export function activateObject(activatedStateID: number | null, activatedAttributeID: number | null): AnyAction {
     return {
         type: AnnotationActionTypes.ACTIVATE_OBJECT,
@@ -639,18 +637,17 @@ export function getPredictionsAsync(): ThunkAction {
                 return;
             }
             annotations = annotations.map(
-                (data: any): any =>
-                    new cvat.classes.ObjectState({
-                        shapeType: data.type,
-                        label: job.task.labels.filter((label: any): boolean => label.id === data.label)[0],
-                        points: data.points,
-                        objectType: ObjectType.SHAPE,
-                        frame,
-                        occluded: false,
-                        source: 'auto',
-                        attributes: {},
-                        zOrder: curZOrder,
-                    }),
+                (data: any): any => new cvat.classes.ObjectState({
+                    shapeType: data.type,
+                    label: job.task.labels.filter((label: any): boolean => label.id === data.label)[0],
+                    points: data.points,
+                    objectType: ObjectType.SHAPE,
+                    frame,
+                    occluded: false,
+                    source: 'auto',
+                    attributes: {},
+                    zOrder: curZOrder,
+                }),
             );
 
             dispatch({
@@ -689,7 +686,12 @@ export function getPredictionsAsync(): ThunkAction {
     };
 }
 
-export function changeFrameAsync(toFrame: number, fillBuffer?: boolean, frameStep?: number): ThunkAction {
+export function changeFrameAsync(
+    toFrame: number,
+    fillBuffer?: boolean,
+    frameStep?: number,
+    forceUpdate?: boolean,
+): ThunkAction {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
         const state: CombinedState = getStore().getState();
         const { instance: job } = state.annotation.job;
@@ -700,7 +702,7 @@ export function changeFrameAsync(toFrame: number, fillBuffer?: boolean, frameSte
                 throw Error(`Required frame ${toFrame} is out of the current job`);
             }
 
-            if (toFrame === frame) {
+            if (toFrame === frame && !forceUpdate) {
                 dispatch({
                     type: AnnotationActionTypes.CHANGE_FRAME_SUCCESS,
                     payload: {
@@ -719,7 +721,6 @@ export function changeFrameAsync(toFrame: number, fillBuffer?: boolean, frameSte
 
                 return;
             }
-
             // Start async requests
             dispatch({
                 type: AnnotationActionTypes.CHANGE_FRAME,
@@ -801,7 +802,6 @@ export function undoActionAsync(sessionInstance: any, frame: number): ThunkActio
                 true,
             );
 
-            dispatch(changeFrameAsync(undo[1]));
             await sessionInstance.actions.undo();
             const history = await sessionInstance.actions.get();
             const states = await sessionInstance.annotations.get(frame, showAllInterpolationTracks, filters);
@@ -817,6 +817,11 @@ export function undoActionAsync(sessionInstance: any, frame: number): ThunkActio
                     maxZ,
                 },
             });
+
+            const undoOnFrame = undo[1];
+            if (frame !== undoOnFrame) {
+                dispatch(changeFrameAsync(undoOnFrame));
+            }
         } catch (error) {
             dispatch({
                 type: AnnotationActionTypes.UNDO_ACTION_FAILED,
@@ -845,7 +850,7 @@ export function redoActionAsync(sessionInstance: any, frame: number): ThunkActio
                 },
                 true,
             );
-            dispatch(changeFrameAsync(redo[1]));
+
             await sessionInstance.actions.redo();
             const history = await sessionInstance.actions.get();
             const states = await sessionInstance.annotations.get(frame, showAllInterpolationTracks, filters);
@@ -861,6 +866,11 @@ export function redoActionAsync(sessionInstance: any, frame: number): ThunkActio
                     maxZ,
                 },
             });
+
+            const redoOnFrame = redo[1];
+            if (frame !== redoOnFrame) {
+                dispatch(changeFrameAsync(redoOnFrame));
+            }
         } catch (error) {
             dispatch({
                 type: AnnotationActionTypes.REDO_ACTION_FAILED,
@@ -1457,15 +1467,6 @@ export function interactWithCanvas(activeInteractor: Model | OpenCVTool, activeL
     };
 }
 
-export function setAIToolsRef(ref: MutableRefObject<any>): AnyAction {
-    return {
-        type: AnnotationActionTypes.SET_AI_TOOLS_REF,
-        payload: {
-            aiToolsRef: ref,
-        },
-    };
-}
-
 export function repeatDrawShapeAsync(): ThunkAction {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
         const {
@@ -1632,7 +1633,7 @@ export function hideShowContextImage(hidden: boolean): AnyAction {
     };
 }
 
-export function getContextImage(): ThunkAction {
+export function getContextImageAsync(): ThunkAction {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
         const state: CombinedState = getStore().getState();
         const { instance: job } = state.annotation.job;
@@ -1655,5 +1656,14 @@ export function getContextImage(): ThunkAction {
                 payload: { error },
             });
         }
+    };
+}
+
+export function switchNavigationBlocked(navigationBlocked: boolean): AnyAction {
+    return {
+        type: AnnotationActionTypes.SWITCH_NAVIGATION_BLOCKED,
+        payload: {
+            navigationBlocked,
+        },
     };
 }

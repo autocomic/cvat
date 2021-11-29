@@ -31,6 +31,11 @@ const defaultState: SettingsState = {
         showObjectsTextAlways: false,
         showAllInterpolationTracks: false,
         intelligentPolygonCrop: true,
+        defaultApproxPolyAccuracy: 9,
+        toolsBlockerState: {
+            algorithmsLocked: false,
+            buttonVisible: false,
+        },
     },
     player: {
         canvasBackgroundColor: '#ffffff',
@@ -38,6 +43,7 @@ const defaultState: SettingsState = {
         frameSpeed: FrameSpeed.Usual,
         resetZoom: false,
         rotateAll: false,
+        smoothImage: true,
         grid: false,
         gridSize: 100,
         gridColor: GridColor.White,
@@ -178,6 +184,15 @@ export default (state = defaultState, action: AnyAction): SettingsState => {
                 },
             };
         }
+        case SettingsActionTypes.SWITCH_SMOOTH_IMAGE: {
+            return {
+                ...state,
+                player: {
+                    ...state.player,
+                    smoothImage: action.payload.smoothImage,
+                },
+            };
+        }
         case SettingsActionTypes.CHANGE_BRIGHTNESS_LEVEL: {
             return {
                 ...state,
@@ -277,6 +292,24 @@ export default (state = defaultState, action: AnyAction): SettingsState => {
                 },
             };
         }
+        case SettingsActionTypes.CHANGE_DEFAULT_APPROX_POLY_THRESHOLD: {
+            return {
+                ...state,
+                workspace: {
+                    ...state.workspace,
+                    defaultApproxPolyAccuracy: action.payload.approxPolyAccuracy,
+                },
+            };
+        }
+        case SettingsActionTypes.SWITCH_TOOLS_BLOCKER_STATE: {
+            return {
+                ...state,
+                workspace: {
+                    ...state.workspace,
+                    toolsBlockerState: { ...state.workspace.toolsBlockerState, ...action.payload.toolsBlockerState },
+                },
+            };
+        }
         case SettingsActionTypes.SWITCH_SETTINGS_DIALOG: {
             return {
                 ...state,
@@ -307,6 +340,18 @@ export default (state = defaultState, action: AnyAction): SettingsState => {
                             selectedOpacity: 60,
                         } :
                         {}),
+                },
+            };
+        }
+        case AnnotationActionTypes.INTERACT_WITH_CANVAS: {
+            return {
+                ...state,
+                workspace: {
+                    ...state.workspace,
+                    toolsBlockerState: {
+                        buttonVisible: true,
+                        algorithmsLocked: false,
+                    },
                 },
             };
         }

@@ -95,31 +95,41 @@ Cypress.Commands.add('checkIssueRegion', () => {
     const sccSelectorIssueRegionId = '#cvat_canvas_issue_region_';
     cy.collectIssueRegionId().then((issueRegionIdList) => {
         const maxId = Math.max(...issueRegionIdList);
-        cy.get(`${sccSelectorIssueRegionId}${maxId}`).trigger('mousemove').should('exist').and('be.visible');
+        cy.get(`${sccSelectorIssueRegionId}${maxId}`)
+            .trigger('mousemove')
+            .should('be.visible');
     });
 });
 
 Cypress.Commands.add('createIssueFromObject', (object, issueType, customeIssueDescription) => {
-    cy.get(object).trigger('mousemove').rightclick();
-    cy.get('.cvat-canvas-context-menu').within(() => {
-        cy.contains('.cvat-context-menu-item', new RegExp(`^${issueType}$`, 'g')).click();
+    cy.get(object).then(($object) => {
+        const objectFillOpacity = $object.attr('fill-opacity');
+        cy.get($object)
+            .trigger('mousemove')
+            .trigger('mouseover')
+            .should('have.attr', 'fill-opacity', Number(objectFillOpacity) * 10)
+            .rightclick();
+    });
+    cy.get('.cvat-canvas-context-menu').should('be.visible').within(() => {
+        cy.contains('.cvat-context-menu-item', new RegExp(`^${issueType}$`)).click();
     });
     if (issueType === 'Open an issue ...') {
-        cy.get('.cvat-create-issue-dialog').within(() => {
+        cy.get('.cvat-create-issue-dialog').should('be.visible').within(() => {
             cy.get('#issue_description').type(customeIssueDescription);
             cy.get('[type="submit"]').click();
         });
     } else if (issueType === 'Quick issue ...') {
-        cy.get('[id="quick_issue_from_latest$Menu"]')
+        cy.get('.cvat-quick-issue-from-latest-item')
             .should('be.visible')
-            .contains('.cvat-context-menu-item', new RegExp(`^${customeIssueDescription}$`, 'g'))
+            .contains('.cvat-context-menu-item', new RegExp(`^${customeIssueDescription}$`))
             .click();
     }
+    cy.get('.cvat-canvas-context-menu').should('not.exist');
     cy.checkIssueRegion();
 });
 
 Cypress.Commands.add('createIssueFromControlButton', (createIssueParams) => {
-    cy.get('.cvat-issue-control').click();
+    cy.get('.cvat-issue-control').click().should('have.class', 'cvat-active-canvas-control');
     if (createIssueParams.type === 'rectangle') {
         cy.get('.cvat-canvas-container')
             .trigger('mousedown', createIssueParams.firstX, createIssueParams.firstY, { button: 0 })
@@ -144,9 +154,7 @@ Cypress.Commands.add('resolveReopenIssue', (issueLabel, resolveText, reopen) => 
     cy.get('.cvat-issue-dialog-input').type(resolveText);
     cy.get('.cvat-issue-dialog-footer').within(() => {
         cy.contains('button', 'Comment').click();
-        reopen
-            ? cy.contains('button', 'Reopen').click()
-            : cy.contains('button', 'Resolve').click();
+        reopen ? cy.contains('button', 'Reopen').click() : cy.contains('button', 'Resolve').click();
     });
     if (reopen) cy.get('.cvat-issue-dialog-header').find('[aria-label="close"]').click();
     cy.wait('@postComment').its('response.statusCode').should('equal', 201);
@@ -157,7 +165,7 @@ Cypress.Commands.add('submitReview', (decision, user) => {
     cy.get('.cvat-submit-review-dialog').within(() => {
         cy.contains(new RegExp(`^${decision}$`, 'g')).click();
         if (decision === 'Review next') {
-            cy.intercept('GET', `/api/v1/users?is_active=true&search=${user}&limit=10`).as('searchUsers');
+            cy.intercept('GET', `/api/v1/users?search=${user}&limit=10&is_active=true`).as('searchUsers');
             cy.get('.cvat-user-search-field').within(() => {
                 cy.get('input[type="search"]').clear().type(`${user}`);
                 cy.wait('@searchUsers').its('response.statusCode').should('equal', 200);

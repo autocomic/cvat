@@ -17,15 +17,15 @@ annotation team. Try it online [cvat.org](https://cvat.org).
 
 ## Documentation
 
-- [Contributing](https://openvinotoolkit.github.io/cvat/docs/for-developers/contributing/)
-- [Installation guide](https://openvinotoolkit.github.io/cvat/docs/for-users/installation/)
-- [User's guide](https://openvinotoolkit.github.io/cvat/docs/for-users/user-guide/)
-- [Django REST API documentation](https://openvinotoolkit.github.io/cvat/docs/for-developers/rest_api_guide/)
+- [Contributing](https://openvinotoolkit.github.io/cvat/docs/contributing/)
+- [Installation guide](https://openvinotoolkit.github.io/cvat/docs/administration/basics/installation/)
+- [Manual](https://openvinotoolkit.github.io/cvat/docs/manual/)
+- [Django REST API documentation](https://openvinotoolkit.github.io/cvat/docs/administration/basics/rest_api_guide/)
 - [Datumaro dataset framework](https://github.com/openvinotoolkit/datumaro/blob/develop/README.md)
-- [Command line interface](https://openvinotoolkit.github.io/cvat/docs/for-developers/cli/)
-- [XML annotation format](https://openvinotoolkit.github.io/cvat/docs/for-developers/xml_format/)
-- [AWS Deployment Guide](https://openvinotoolkit.github.io/cvat/docs/for-developers/aws-deployment-guide/)
-- [Frequently asked questions](https://openvinotoolkit.github.io/cvat/docs/for-users/faq/)
+- [Command line interface](https://openvinotoolkit.github.io/cvat/docs/manual/advanced/cli/)
+- [XML annotation format](https://openvinotoolkit.github.io/cvat/docs/manual/advanced/xml_format/)
+- [AWS Deployment Guide](https://openvinotoolkit.github.io/cvat/docs/administration/basics/aws-deployment-guide/)
+- [Frequently asked questions](https://openvinotoolkit.github.io/cvat/docs/faq/)
 - [Questions](#questions)
 
 ## Screencasts
@@ -48,28 +48,28 @@ dataset framework allows additional dataset transformations via its command
 line tool and Python library.
 
 For more information about supported formats look at the
-[documentation](https://openvinotoolkit.github.io/cvat/docs/for-users/formats/).
+[documentation](https://openvinotoolkit.github.io/cvat/docs/manual/advanced/formats/).
 
 <!--lint disable maximum-line-length-->
 
-| Annotation format                                                                                        | Import | Export |
-| -------------------------------------------------------------------------------------------------------  | ------ | ------ |
-| [CVAT for images](https://openvinotoolkit.github.io/cvat/docs/for-developers/xml_format/#annotation)     | X      | X      |
-| [CVAT for a video](https://openvinotoolkit.github.io/cvat/docs/for-developers/xml_format/#interpolation) | X      | X      |
-| [Datumaro](https://github.com/openvinotoolkit/datumaro)                                                  |        | X      |
-| [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)                                                    | X      | X      |
-| Segmentation masks from [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)                            | X      | X      |
-| [YOLO](https://pjreddie.com/darknet/yolo/)                                                               | X      | X      |
-| [MS COCO Object Detection](http://cocodataset.org/#format-data)                                          | X      | X      |
-| [TFrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord)                                      | X      | X      |
-| [MOT](https://motchallenge.net/)                                                                         | X      | X      |
-| [LabelMe 3.0](http://labelme.csail.mit.edu/Release3.0)                                                   | X      | X      |
-| [ImageNet](http://www.image-net.org)                                                                     | X      | X      |
-| [CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/)                                     | X      | X      |
-| [WIDER Face](http://shuoyang1213.me/WIDERFACE/)                                                          | X      | X      |
-| [VGGFace2](https://github.com/ox-vgg/vgg_face2)                                                          | X      | X      |
-| [Market-1501](https://www.aitribune.com/dataset/2018051063)                                              | X      | X      |
-| [ICDAR13/15](https://rrc.cvc.uab.es/?ch=2)                                                               | X      | X      |
+| Annotation format                                                                                         | Import | Export |
+| --------------------------------------------------------------------------------------------------------- | ------ | ------ |
+| [CVAT for images](https://openvinotoolkit.github.io/cvat/docs/manual/advanced/xml_format/#annotation)     | X      | X      |
+| [CVAT for a video](https://openvinotoolkit.github.io/cvat/docs/manual/advanced/xml_format/#interpolation) | X      | X      |
+| [Datumaro](https://github.com/openvinotoolkit/datumaro)                                                   |        | X      |
+| [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)                                                     | X      | X      |
+| Segmentation masks from [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)                             | X      | X      |
+| [YOLO](https://pjreddie.com/darknet/yolo/)                                                                | X      | X      |
+| [MS COCO Object Detection](http://cocodataset.org/#format-data)                                           | X      | X      |
+| [TFrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord)                                       | X      | X      |
+| [MOT](https://motchallenge.net/)                                                                          | X      | X      |
+| [LabelMe 3.0](http://labelme.csail.mit.edu/Release3.0)                                                    | X      | X      |
+| [ImageNet](http://www.image-net.org)                                                                      | X      | X      |
+| [CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/)                                      | X      | X      |
+| [WIDER Face](http://shuoyang1213.me/WIDERFACE/)                                                           | X      | X      |
+| [VGGFace2](https://github.com/ox-vgg/vgg_face2)                                                           | X      | X      |
+| [Market-1501](https://www.aitribune.com/dataset/2018051063)                                               | X      | X      |
+| [ICDAR13/15](https://rrc.cvc.uab.es/?ch=2)                                                                | X      | X      |
 
 <!--lint enable maximum-line-length-->
 
@@ -86,11 +86,13 @@ For more information about supported formats look at the
 | [Object reidentification](/serverless/openvino/omz/intel/person-reidentification-retail-300/nuclio)     | reid       | OpenVINO   | X   |     |
 | [Semantic segmentation for ADAS](/serverless/openvino/omz/intel/semantic-segmentation-adas-0001/nuclio) | detector   | OpenVINO   | X   |     |
 | [Text detection v4](/serverless/openvino/omz/intel/text-detection-0004/nuclio)                          | detector   | OpenVINO   | X   |     |
-| [SiamMask](/serverless/pytorch/foolwood/siammask/nuclio)                                                | tracker    | PyTorch    | X   |     |
+| [SiamMask](/serverless/pytorch/foolwood/siammask/nuclio)                                                | tracker    | PyTorch    | X   | X   |
 | [f-BRS](/serverless/pytorch/saic-vul/fbrs/nuclio)                                                       | interactor | PyTorch    | X   |     |
+| [HRNet](/serverless/pytorch/saic-vul/hrnet/nuclio)                                                      | interactor | PyTorch    |     | X   |
 | [Inside-Outside Guidance](/serverless/pytorch/shiyinzhang/iog/nuclio)                                   | interactor | PyTorch    | X   |     |
 | [Faster RCNN](/serverless/tensorflow/faster_rcnn_inception_v2_coco/nuclio)                              | detector   | TensorFlow | X   | X   |
 | [Mask RCNN](/serverless/tensorflow/matterport/mask_rcnn/nuclio)                                         | detector   | TensorFlow | X   | X   |
+| [RetinaNet](serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio)                            | detector   | PyTorch    | X   | X   |
 
 <!--lint enable maximum-line-length-->
 
@@ -102,7 +104,7 @@ are visible to users.
 
 Disabled features:
 
-- [Analytics: management and monitoring of data annotation team](https://openvinotoolkit.github.io/cvat/docs/for-developers/analytics/)
+- [Analytics: management and monitoring of data annotation team](https://openvinotoolkit.github.io/cvat/docs/administration/advanced/analytics/)
 
 Limitations:
 
@@ -130,6 +132,21 @@ additional licenses. Intel is not responsible for obtaining any
 such licenses, nor liable for any licensing fees due in
 connection with your use of FFmpeg.
 
+## Partners
+
+- [Onepanel](https://github.com/onepanelio/core) is an open source
+  vision AI platform that fully integrates CVAT with scalable data processing
+  and parallelized training pipelines.
+- [DataIsKey](https://dataiskey.eu/annotation-tool/) uses CVAT as their prime data labeling tool
+  to offer annotation services for projects of any size.
+- [Human Protocol](https://hmt.ai) uses CVAT as a way of adding annotation service to the human protocol.
+- [Cogito Tech LLC](https://bit.ly/3klT0h6), a Human-in-the-Loop Workforce Solutions Provider, used CVAT
+  in annotation of about 5,000 images for a brand operating in the fashion segment.
+- [FiftyOne](https://fiftyone.ai) is an open-source dataset curation and model analysis
+tool for visualizing, exploring, and improving computer vision datasets and models that is
+[tightly integrated](https://voxel51.com/docs/fiftyone/integrations/cvat.html) with CVAT
+for annotation and label refinement.
+
 ## Questions
 
 CVAT usage related questions or unclear concepts can be posted in our
@@ -154,16 +171,8 @@ Other ways to ask questions and get our support:
 - [Intel Software: Computer Vision Annotation Tool: A Universal Approach to Data Annotation](https://software.intel.com/en-us/articles/computer-vision-annotation-tool-a-universal-approach-to-data-annotation)
 - [VentureBeat: Intel open-sources CVAT, a toolkit for data labeling](https://venturebeat.com/2019/03/05/intel-open-sources-cvat-a-toolkit-for-data-labeling/)
 
-## Projects using CVAT
-
-- [Onepanel](https://github.com/onepanelio/core) is an open source
-  vision AI platform that fully integrates CVAT with scalable data processing
-  and parallelized training pipelines.
-- [DataIsKey](https://dataiskey.eu/annotation-tool/) uses CVAT as their prime data labeling tool
-  to offer annotation services for projects of any size.
-- [Human Protocol](https://hmt.ai) uses CVAT as a way of adding annotation service to the human protocol.
-<!-- prettier-ignore-start -->
-<!-- Badges -->
+  <!-- prettier-ignore-start -->
+  <!-- Badges -->
 
 [docker-server-pulls-img]: https://img.shields.io/docker/pulls/openvino/cvat_server.svg?style=flat-square&label=server%20pulls
 [docker-server-image-url]: https://hub.docker.com/r/openvino/cvat_server

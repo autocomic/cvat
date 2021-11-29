@@ -16,13 +16,20 @@
         camelToSnake,
     } = require('./common');
 
-    const { TaskStatus, TaskMode, DimensionType } = require('./enums');
+    const {
+        TaskStatus,
+        TaskMode,
+        DimensionType,
+        CloudStorageProviderType,
+        CloudStorageCredentialsType,
+    } = require('./enums');
 
     const User = require('./user');
     const { AnnotationFormats } = require('./annotation-formats');
     const { ArgumentError } = require('./exceptions');
     const { Task } = require('./session');
     const { Project } = require('./project');
+    const { CloudStorage } = require('./cloud-storage');
 
     function implementAPI(cvat) {
         cvat.plugins.list.implementation = PluginRegistry.list;
@@ -126,10 +133,7 @@
                 users = await serverProxy.users.self();
                 users = [users];
             } else {
-                // get list of active users as default
-                const searchParams = {
-                    is_active: true,
-                };
+                const searchParams = {};
                 for (const key in filter) {
                     if (filter[key] && key !== 'self') {
                         searchParams[key] = filter[key];
@@ -184,6 +188,7 @@
                 owner: isString,
                 assignee: isString,
                 search: isString,
+                ordering: isString,
                 status: isEnum.bind(TaskStatus),
                 mode: isEnum.bind(TaskMode),
                 dimension: isEnum.bind(DimensionType),
@@ -192,11 +197,13 @@
             checkExclusiveFields(filter, ['id', 'search', 'projectId'], ['page']);
 
             const searchParams = new URLSearchParams();
+
             for (const field of [
                 'name',
                 'owner',
                 'assignee',
                 'search',
+                'ordering',
                 'status',
                 'mode',
                 'id',
@@ -205,7 +212,7 @@
                 'dimension',
             ]) {
                 if (Object.prototype.hasOwnProperty.call(filter, field)) {
-                    searchParams.set(field, filter[field]);
+                    searchParams.set(camelToSnake(field), filter[field]);
                 }
             }
 
@@ -226,35 +233,20 @@
                 owner: isString,
                 search: isString,
                 status: isEnum.bind(TaskStatus),
-                withoutTasks: isBoolean,
             });
 
-            checkExclusiveFields(filter, ['id', 'search'], ['page', 'withoutTasks']);
-
-            if (typeof filter.withoutTasks === 'undefined') {
-                if (typeof filter.id === 'undefined') {
-                    filter.withoutTasks = true;
-                } else {
-                    filter.withoutTasks = false;
-                }
-            }
+            checkExclusiveFields(filter, ['id', 'search'], ['page']);
 
             const searchParams = new URLSearchParams();
-            for (const field of ['name', 'assignee', 'owner', 'search', 'status', 'id', 'page', 'withoutTasks']) {
+            for (const field of ['name', 'assignee', 'owner', 'search', 'status', 'id', 'page']) {
                 if (Object.prototype.hasOwnProperty.call(filter, field)) {
                     searchParams.set(camelToSnake(field), filter[field]);
                 }
             }
 
             const projectsData = await serverProxy.projects.get(searchParams.toString());
-            // prettier-ignore
             const projects = projectsData.map((project) => {
-                if (filter.withoutTasks) {
-                    project.task_ids = project.tasks;
-                    project.tasks = [];
-                } else {
-                    project.task_ids = project.tasks.map((task) => task.id);
-                }
+                project.task_ids = project.tasks;
                 return project;
             }).map((project) => new Project(project));
 
@@ -263,7 +255,51 @@
             return projects;
         };
 
-        cvat.projects.searchNames.implementation = async (search, limit) => serverProxy.projects.searchNames(search, limit);
+        cvat.projects.searchNames
+            .implementation = async (search, limit) => serverProxy.projects.searchNames(search, limit);
+
+        cvat.cloudStorages.get.implementation = async (filter) => {
+            checkFilter(filter, {
+                page: isInteger,
+                displayName: isString,
+                resourceName: isString,
+                description: isString,
+                id: isInteger,
+                owner: isString,
+                search: isString,
+                providerType: isEnum.bind(CloudStorageProviderType),
+                credentialsType: isEnum.bind(CloudStorageCredentialsType),
+            });
+
+            checkExclusiveFields(filter, ['id', 'search'], ['page']);
+
+            const searchParams = new URLSearchParams();
+            for (const field of [
+                'displayName',
+                'credentialsType',
+                'providerType',
+                'owner',
+                'search',
+                'id',
+                'page',
+                'description',
+            ]) {
+                if (Object.prototype.hasOwnProperty.call(filter, field)) {
+                    searchParams.set(camelToSnake(field), filter[field]);
+                }
+            }
+
+            if (Object.prototype.hasOwnProperty.call(filter, 'resourceName')) {
+                searchParams.set('resource', filter.resourceName);
+            }
+
+            const cloudStoragesData = await serverProxy.cloudStorages.get(searchParams.toString());
+            const cloudStorages = cloudStoragesData.map((cloudStorage) => new CloudStorage(cloudStorage));
+
+            cloudStorages.count = cloudStoragesData.count;
+
+            return cloudStorages;
+        };
 
         return cvat;
     }

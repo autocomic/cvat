@@ -52,12 +52,15 @@ export enum CuboidDrawingMethod {
 }
 
 export interface Configuration {
+    smoothImage?: boolean;
     autoborders?: boolean;
     displayAllText?: boolean;
     undefinedAttrValue?: string;
     showProjections?: boolean;
     forceDisableEditing?: boolean;
     intelligentPolygonCrop?: boolean;
+    forceFrameUpdate?: boolean;
+    creationOpacity?: number;
 }
 
 export interface DrawData {
@@ -77,10 +80,15 @@ export interface InteractionData {
     crosshair?: boolean;
     minPosVertices?: number;
     minNegVertices?: number;
-    enableNegVertices?: boolean;
+    startWithBox?: boolean;
     enableThreshold?: boolean;
     enableSliding?: boolean;
     allowRemoveOnlyLast?: boolean;
+    intermediateShape?: {
+        shapeType: string;
+        points: number[];
+    };
+    onChangeToolsBlockerState?: (event: string) => void;
 }
 
 export interface InteractionResult {
@@ -139,6 +147,7 @@ export enum UpdateReasons {
     ZOOM_CANVAS = 'zoom_canvas',
     CONFIG_UPDATED = 'config_updated',
     DATA_FAILED = 'data_failed',
+    DESTROY = 'destroy',
 }
 
 export enum Mode {
@@ -203,6 +212,7 @@ export interface CanvasModel {
     isAbleToChangeFrame(): boolean;
     configure(configuration: Configuration): void;
     cancel(): void;
+    destroy(): void;
 }
 
 export class CanvasModelImpl extends MasterImpl implements CanvasModel {
@@ -388,8 +398,7 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
                 throw Error(`Canvas is busy. Action: ${this.data.mode}`);
             }
         }
-
-        if (frameData.number === this.data.imageID) {
+        if (frameData.number === this.data.imageID && !this.data.configuration.forceFrameUpdate) {
             this.data.zLayer = zLayer;
             this.data.objects = objectStates;
             this.notify(UpdateReasons.OBJECTS_UPDATED);
@@ -421,7 +430,10 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
             })
             .catch((exception: any): void => {
                 this.data.exception = exception;
-                this.notify(UpdateReasons.DATA_FAILED);
+                // don't notify when the frame is no longer needed
+                if (typeof exception !== 'number' || exception === this.data.imageID) {
+                    this.notify(UpdateReasons.DATA_FAILED);
+                }
                 throw exception;
             });
     }
@@ -540,6 +552,16 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
             }
         }
 
+        // install default values for drawing method
+        if (drawData.enabled) {
+            if (drawData.shapeType === 'rectangle') {
+                this.data.drawData.rectDrawingMethod = drawData.rectDrawingMethod || RectDrawingMethod.CLASSIC;
+            }
+            if (drawData.shapeType === 'cuboid') {
+                this.data.drawData.cuboidDrawingMethod = drawData.cuboidDrawingMethod || CuboidDrawingMethod.CLASSIC;
+            }
+        }
+
         this.notify(UpdateReasons.DRAW);
     }
 
@@ -547,15 +569,14 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
         if (![Mode.IDLE, Mode.INTERACT].includes(this.data.mode)) {
             throw Error(`Canvas is busy. Action: ${this.data.mode}`);
         }
-
-        if (interactionData.enabled) {
+        const thresholdChanged = this.data.interactionData.enableThreshold !== interactionData.enableThreshold;
+        if (interactionData.enabled && !interactionData.intermediateShape && !thresholdChanged) {
             if (this.data.interactionData.enabled) {
                 throw new Error('Interaction has been already started');
             } else if (!interactionData.shapeType) {
                 throw new Error('A shape type was not specified');
             }
         }
-
         this.data.interactionData = interactionData;
         if (typeof this.data.interactionData.crosshair !== 'boolean') {
             this.data.interactionData.crosshair = true;
@@ -632,31 +653,41 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
         if (typeof configuration.autoborders === 'boolean') {
             this.data.configuration.autoborders = configuration.autoborders;
         }
-
+        if (typeof configuration.smoothImage === 'boolean') {
+            this.data.configuration.smoothImage = configuration.smoothImage;
+        }
         if (typeof configuration.undefinedAttrValue === 'string') {
             this.data.configuration.undefinedAttrValue = configuration.undefinedAttrValue;
         }
-
         if (typeof configuration.forceDisableEditing === 'boolean') {
             this.data.configuration.forceDisableEditing = configuration.forceDisableEditing;
         }
-
         if (typeof configuration.intelligentPolygonCrop === 'boolean') {
             this.data.configuration.intelligentPolygonCrop = configuration.intelligentPolygonCrop;
+        }
+        if (typeof configuration.forceFrameUpdate === 'boolean') {
+            this.data.configuration.forceFrameUpdate = configuration.forceFrameUpdate;
+        }
+        if (typeof configuration.creationOpacity === 'number') {
+            this.data.configuration.creationOpacity = configuration.creationOpacity;
         }
 
         this.notify(UpdateReasons.CONFIG_UPDATED);
     }
 
     public isAbleToChangeFrame(): boolean {
-        const isUnable = [Mode.DRAG, Mode.EDIT, Mode.RESIZE, Mode.INTERACT].includes(this.data.mode)
-            || (this.data.mode === Mode.DRAW && typeof this.data.drawData.redraw === 'number');
+        const isUnable = [Mode.DRAG, Mode.EDIT, Mode.RESIZE, Mode.INTERACT].includes(this.data.mode) ||
+            (this.data.mode === Mode.DRAW && typeof this.data.drawData.redraw === 'number');
 
         return !isUnable;
     }
 
     public cancel(): void {
         this.notify(UpdateReasons.CANCEL);
+    }
+
+    public destroy(): void {
+        this.notify(UpdateReasons.DESTROY);
     }
 
     public get configuration(): Configuration {
